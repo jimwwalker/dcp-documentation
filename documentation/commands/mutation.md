@@ -25,18 +25,17 @@ Extra looks like:
        +---------------+---------------+---------------+---------------+
      24| lock_time                                                     |
        +---------------+---------------+---------------+---------------+
-     28| Metadata Size                 | NRU           | clen          |
-       +---------------+---------------+-------------------------------+
-       Total 31 bytes
+     28| Metadata Size                 | NRU           |
+       +---------------+---------------+---------------+
+       Total 30 bytes
 
 The metadata is located after the items value. The size for the value is therefore bodylen - key length - metadata size - 31 (size of extra).
 
 NRU is an internal field used by the server and may safely be ignored by other consumers.
 
-Please see "Collections Enabled" for description of clen field.
-
-
 The consumer should not send a reply to this command. The following example shows the breakdown of the message:
+
+Example of DCP mutation if collections are not enabled.
 
       Byte/     0       |       1       |       2       |       3       |
          /              |               |               |               |
@@ -68,15 +67,13 @@ The consumer should not send a reply to this command. The following example show
         +---------------+---------------+---------------+---------------+
       48| 0x00          | 0x00          | 0x00          | 0x00          |
         +---------------+---------------+---------------+---------------+
-      52| 0x00          | 0x00          | 0x00          | 0x07          |
+      52| 0x00          | 0x00          | 0x00          | 0x68 ('h')    |
         +---------------+---------------+---------------+---------------+
-      56| 0x63 ('c')    | 0x3a (':')    | 0x3a (':')    | 0x68 ('h')    |
+      56| 0x65 ('e')    | 0x6c ('l')    | 0x6c ('l')    | 0x6f ('o')    |
         +---------------+---------------+---------------+---------------+
-      60| 0x65 ('e')    | 0x6c ('l')    | 0x6c ('l')    | 0x6f ('o')    |
+      60| 0x77 ('w')    | 0x6f ('o')    | 0x72 ('r')    | 0x6c ('l')    |
         +---------------+---------------+---------------+---------------+
-      64| 0x77 ('w')    | 0x6f ('o')    | 0x72 ('r')    | 0x6c ('l')    |
-        +---------------+---------------+---------------+---------------+
-      68| 0x64 ('d')    |
+      64| 0x64 ('d')    |
         +---------------+
     DCP_MUTATION command
     Field        (offset) (value)
@@ -96,9 +93,70 @@ The consumer should not send a reply to this command. The following example show
       lock time  (48-51): 0x00000000
       nmeta      (52-53): 0x0000
       nru        (54)   : 0x00
-      clen       (55)   : 0x1
-    Key          (56-63): c::hello
-    Value        (64-68): world
+    Key          (55-59): hello
+    Value        (60-64): world
+
+Example of DCP mutation if collections are enabled, the collection-ID of 555 is encoded as 0xab, 0x04
+
+      Byte/     0       |       1       |       2       |       3       |
+         /              |               |               |               |
+        |0 1 2 3 4 5 6 7|0 1 2 3 4 5 6 7|0 1 2 3 4 5 6 7|0 1 2 3 4 5 6 7|
+        +---------------+---------------+---------------+---------------+
+       0| 0x80          | 0x57          | 0x00          | 0x07          |
+        +---------------+---------------+---------------+---------------+
+       4| 0x1f          | 0x00          | 0x02          | 0x10          |
+        +---------------+---------------+---------------+---------------+
+       8| 0x00          | 0x00          | 0x00          | 0x29          |
+        +---------------+---------------+---------------+---------------+
+      12| 0x00          | 0x00          | 0x12          | 0x10          |
+        +---------------+---------------+---------------+---------------+
+      16| 0x00          | 0x00          | 0x00          | 0x00          |
+        +---------------+---------------+---------------+---------------+
+      20| 0x00          | 0x00          | 0x00          | 0x00          |
+        +---------------+---------------+---------------+---------------+
+      24| 0x00          | 0x00          | 0x00          | 0x00          |
+        +---------------+---------------+---------------+---------------+
+      28| 0x00          | 0x00          | 0x00          | 0x04          |
+        +---------------+---------------+---------------+---------------+
+      32| 0x00          | 0x00          | 0x00          | 0x00          |
+        +---------------+---------------+---------------+---------------+
+      36| 0x00          | 0x00          | 0x00          | 0x01          |
+        +---------------+---------------+---------------+---------------+
+      40| 0x00          | 0x00          | 0x00          | 0x00          |
+        +---------------+---------------+---------------+---------------+
+      44| 0x00          | 0x00          | 0x00          | 0x00          |
+        +---------------+---------------+---------------+---------------+
+      48| 0x00          | 0x00          | 0x00          | 0x00          |
+        +---------------+---------------+---------------+---------------+
+      52| 0x00          | 0x00          | 0x00          | 0xab          |
+        +---------------+---------------+---------------+---------------+
+      56| 0x04          | 0x68 ('h')    | 0x65 ('e')    | 0x6c ('l')    |
+        +---------------+---------------+---------------+---------------+
+      60| 0x6c ('l')    | 0x6f ('o')    | 0x77 ('w')    | 0x6f ('o')    |
+        +---------------+---------------+---------------+---------------+
+      64| 0x72 ('r')    | 0x6c ('l')    | 0x64 ('d')    |
+        +---------------+---------------+---------------+
+    DCP_MUTATION command
+    Field               (offset) (value)
+    Magic               (0)    : 0x80
+    Opcode              (1)    : 0x57
+    Key length          (2,3)  : 0x0007
+    Extra length        (4)    : 0x1f
+    Data type           (5)    : 0x00
+    Vbucket             (6,7)  : 0x0210
+    Total body          (8-11) : 0x00000029
+    Opaque              (12-15): 0x00001210
+    CAS                 (16-23): 0x0000000000000000
+      by seqno          (24-31): 0x0000000000000004
+      rev seqno         (32-39): 0x0000000000000001
+      flags             (40-43): 0x00000000
+      expiration        (44-47): 0x00000000
+      lock time         (48-51): 0x00000000
+      nmeta             (52-53): 0x0000
+      nru               (54)   : 0x00
+    Key [collection-ID] (55,56): 0xab, 0x4
+    Key                 (57-62): hello
+    Value               (63-66): world
 
 ### Returns
 
@@ -126,19 +184,9 @@ The extended meta data section is used to send extra meta data for a particular 
 ### Collections Enabled
 
 If the DCP channel is opened with collections enabled then all mutations sent
-will include 1 extra byte that encodes the collection length (shown as "clen" in the
-above encoding diagram). The collection length tells the client how many bytes of
-the key encode the collection name.
-
-The diagram above shows a key written to the "c" collection with a separator of
-"::", thus the key is "c::hello".
-
-If the mutation relates to a key in the default collection, then the collection
-length would be 0.
-
-If the DCP channel is not opened with collections enabled, then this data is not
-sent and we will encode a mutation packet which is compatible with legacy
-clients.
+will encode the collection-ID of the key. The collection-ID is stored in byte 0
+of the key as an unsigned_leb128 (uint32_t) value. Clients must decode the leb128
+collection-ID to locate the document key.
 
 ### Errors
 

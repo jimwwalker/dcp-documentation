@@ -271,6 +271,32 @@ The following example tries to initiate a stream for vbucket 0 that continues fr
       vb UUID    (72-79): 0x00000000deadbeef
       vb seqno   (80-87): 0x0000000000006524
 
+### Collections Filter
+
+If connection has collections enabled (via HELLO) the client can utilise DCP filtering and encode a JSON configuration document into the value of the stream-request message.
+
+#### Collections not enabled
+
+A client that doesn't enable collections will only receive mutations in the default collection. That is
+documents written by clients that don't enable collections (for example legacy clients written before Couchbase developed collections).
+
+#### Collections enabled and no filter specified (i.e. no value)
+
+The client receives "unfiltered" data, that is every mutation will be sent to the client.
+
+#### Collections enabled and a filter specified
+
+The value must encode a valid JSON document that specifies the filter information. For example if the client only wants mutations against 5 and 12 the following JSON filter data would be encoded.
+
+```
+{
+    "collections" : ["5", "12"]
+}
+```
+
+DCP streams that are created with a filter have a lifetime of the filtered collections. For example if
+5 and 12 were deleted, DCP streams would auto close when the last collection is deleted, as there's no more data to send.
+
 ### Returns
 
 A status code indicating whether or not the operation was successful.
